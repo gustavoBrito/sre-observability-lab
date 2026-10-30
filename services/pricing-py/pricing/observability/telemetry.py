@@ -31,7 +31,7 @@ def configure() -> None:
 
     # Logs shipped as OTLP (Loki receives them without host agents)
     log_provider = LoggerProvider(resource=resource)
-    log_provider.add_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+    log_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
     logging.getLogger().addHandler(
         LoggingHandler(level=logging.INFO, logger_provider=log_provider)
     )

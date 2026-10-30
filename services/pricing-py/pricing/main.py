@@ -4,15 +4,14 @@ Wiring only (see AGENTS.md). Business lives in pricing/services/; HTTP edges
 in pricing/routers/; gateways in pricing/repositories/.
 """
 
+import time
 from fastapi import FastAPI
 from prometheus_client import start_http_server
 import uvicorn
 
-from pricing.observability import metrics as obs_metrics
 from pricing.observability import telemetry
 from pricing.observability.metrics import LATENCY, REQUESTS
 from pricing.routers import price
-import time
 
 # OTel (traces + logs) configured BEFORE instrumenting the app
 telemetry.configure()
