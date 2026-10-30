@@ -30,7 +30,8 @@ def main() -> int:
         for line in f:
             if line.startswith("mode:"):
                 continue
-            location, _range, num, count = line.split()
+            tokens = line.split()
+            location, num, count = tokens[0], tokens[-2], tokens[-1]
             pkg = location.split(":")[0].rsplit(os.sep, 1)[-1].rsplit("/", 1)[-1]
             if pkg in excluded:
                 continue

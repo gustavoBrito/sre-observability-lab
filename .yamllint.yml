@@ -12,4 +12,4 @@ rules:
     indent-sequences: consistent
 
 ignore: |
-  grafana/dashboards/
+  grafana/dashboards/**

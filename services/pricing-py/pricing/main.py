@@ -8,13 +8,14 @@ from fastapi import FastAPI
 from prometheus_client import start_http_server
 import uvicorn
 
-from pricing import observability
+from pricing.observability import metrics as obs_metrics
+from pricing.observability import telemetry
 from pricing.observability.metrics import LATENCY, REQUESTS
 from pricing.routers import price
 import time
 
 # OTel (traces + logs) configured BEFORE instrumenting the app
-observability.telemetry.configure()
+telemetry.configure()
 
 app = FastAPI(title="pricing-py")
 app.include_router(price.router)
@@ -33,7 +34,7 @@ async def track_metrics(request, call_next):
     return response
 
 
-observability.telemetry.instrument_http(app)  # tracer middleware (thin wrapper)
+telemetry.instrument_http(app)  # tracer middleware (thin wrapper)
 
 if __name__ == "__main__":
     start_http_server(9002)
