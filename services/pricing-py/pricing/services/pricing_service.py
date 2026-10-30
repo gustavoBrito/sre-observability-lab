@@ -11,7 +11,6 @@ import random
 from pricing.repositories import persistence
 from pricing.repositories.inventory_repository import (
     InventoryRepository,
-    InventoryUnavailable,
 )
 
 log = logging.getLogger(__name__)

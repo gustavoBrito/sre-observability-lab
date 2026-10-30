@@ -24,7 +24,7 @@ def _free_port() -> int:
 class _InventoryStub(http.server.BaseHTTPRequestHandler):
     """Always-healthy inventory replica for pricing's upstream call."""
 
-    def do_GET(self):  # noqa: N802 (stdlib API)
+    def do_GET(self):
         self.send_response(200)
         self.send_header("content-type", "application/json")
         self.end_headers()

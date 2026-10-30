@@ -5,9 +5,10 @@ in pricing/routers/; gateways in pricing/repositories/.
 """
 
 import time
+
+import uvicorn
 from fastapi import FastAPI
 from prometheus_client import start_http_server
-import uvicorn
 
 from pricing.observability import telemetry
 from pricing.observability.metrics import LATENCY, REQUESTS

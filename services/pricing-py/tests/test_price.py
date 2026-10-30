@@ -2,7 +2,6 @@
 router -> service -> repositories. Failure/tail paths forced via RNG seams."""
 
 from fastapi.testclient import TestClient
-
 from pricing import main
 from pricing.models.price import Stock
 from pricing.repositories import persistence
@@ -24,8 +23,8 @@ class _StubInventory:
         return Stock(sku=sku, units=5)
 
 
-def _install(inventory=_StubInventory()):
-    price_router.svc = PricingService(inventory=inventory)
+def _install(inventory: _StubInventory | None = None):
+    price_router.svc = PricingService(inventory=inventory or _StubInventory())
 
 
 def test_healthz():
