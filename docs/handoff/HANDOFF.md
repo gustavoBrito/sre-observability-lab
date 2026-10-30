@@ -33,7 +33,10 @@ burn-rate, tudo reportado em docs as-code — e agents governados por AGENTS.md.
    observabilidade como injeção (roadmap: sidecar + Helm por serviço).
 5. `docs/adr/0003-polyrepo-sidecar-agent-gateway.md` — PROPOSTO: split em
    5 repos (contracts primeiro) + OTel agent sidecar (agent->gateway).
-6. `AGENTS.md` — Pré-requisitos para qualquer agente/humano; DoD em gates.
+6. `docs/adr/0004-agent-army-governance.md` — exército de agentes: roster,
+   permissões por papel e human-in-the-loop (`.opencode/agents/` +
+   `docs/agent-army.md`).
+7. `AGENTS.md` — Pré-requisitos para qualquer agente/humano; DoD em gates.
 
 ## Dívidas / vigia ativa
 

@@ -15,6 +15,11 @@ nada entra no histórico sem estar descrita.
   (contract primeiro: `telemetry-contracts` como produto; depois 1 repo por
   serviço + stack) e sidecar OTel em duas camadas (agent -> gateway),
   com simulação de pod-localhost em compose via `network_mode`.
+- ADR-0004 (aceito): exército de agentes governado — `commander` (primário)
+  + 9 subagentes (architect, integrator, security, reviewer, telemetry,
+  rollout, chaos, triage, curator) em `.opencode/agents/`, matriz de
+  permissões por papel, `git push` negado a todos os subagentes, human-in-
+  the-loop no push. Referência: `docs/agent-army.md`.
 
 ## [0.2.0] — 2026-10-30
 
