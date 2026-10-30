@@ -55,7 +55,7 @@ jobs:
           node-version: 22
       - name: Install deps
         working-directory: services/bff-node
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Run tests (jest coverage thresholds in jest.config.js)
         working-directory: services/bff-node
         run: npm test

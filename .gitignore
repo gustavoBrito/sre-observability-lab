@@ -1,4 +1,5 @@
 # Data / runtime
+node_modules/
 tempo-data/
 loki-data/
 .pytest_cache/
