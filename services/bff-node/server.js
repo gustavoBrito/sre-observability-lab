@@ -6,7 +6,7 @@ const { register, Counter, Histogram, collectDefaultMetrics } = require("prom-cl
 
 const PORT_HTTP = Number(process.env.PORT_HTTP || 8000);
 const PORT_METRICS = Number(process.env.PORT_METRICS || 9001);
-const PRICING_URL = process.env.PRICING_URL || "http://pricing:8002";
+const PRICING_URL = () => process.env.PRICING_URL || "http://pricing:8002";
 
 /**
  * First-class metrics for SLO math, with a stable schema. Names here are a
@@ -56,18 +56,13 @@ function get(url) {
       let body = "";
       res.on("data", (chunk) => (body += chunk));
       res.on("end", () => {
-        const result = {
-          status: res.statusCode,
-          body,
-        };
+        const result = { status: res.statusCode, body };
         if (res.statusCode >= 400) reject(result);
         else resolve(result);
       });
     });
     req.on("error", reject);
-    req.setTimeout(3000, () => {
-      req.destroy(new Error("upstream timeout"));
-    });
+    req.setTimeout(3000, () => req.destroy(new Error("upstream timeout")));
   });
 }
 
@@ -77,16 +72,13 @@ app.get("/api/orders", async (req, res) => {
   try {
     await sleep(40 + Math.random() * 80); // BFF processing overhead
 
-    const pricing = await get(`${PRICING_URL}/price?sku=SKU-42`);
-    const price = pricing.body;
+    const pricing = await get(`${PRICING_URL()}/price?sku=SKU-42`);
 
-    res.status(200).json({ order_id: "ord-" + Date.now(), price: JSON.parse(price) });
+    res.status(200).json({ order_id: "ord-" + Date.now(), price: pricing.body });
   } catch (err) {
-    const status = err.status >= 400 ? (err.status === 502 ? 502 : 500) : 502;
-    console.error(
-      `ERROR upstream request failed: ${JSON.stringify(err)}`,
-    );
-    res.status(status).json({ error: "upstream_failure" });
+    // ECONNREFUSED/timeout: 502 (bad gateway); upstream 5xx: propagate as 500
+    console.error(`ERROR upstream request failed: ${JSON.stringify(err.message ?? err)}`);
+    res.status(err.status ? 500 : 502).json({ error: "upstream_failure" });
   }
 });
 
@@ -94,12 +86,15 @@ app.get("/healthz", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-// Dedicated metrics port (stable, low-traffic, kept out of RED latency data)
-http
-  .createServer(async (_req, res) => {
+module.exports = { app };
+
+if (require.main === module) {
+  // Dedicated metrics port (kept out of RED latency math)
+  const metricsServer = http.createServer(async (_req, res) => {
     res.writeHead(200, { "content-type": register.contentType });
     res.end(await register.metrics());
-  })
-  .listen(PORT_METRICS, () => console.log(`metrics on :${PORT_METRICS}`));
+  });
+  metricsServer.listen(PORT_METRICS, () => console.log(`metrics on :${PORT_METRICS}`));
 
-app.listen(PORT_HTTP, () => console.log(`bff listening on :${PORT_HTTP}`));
+  app.listen(PORT_HTTP, () => console.log(`bff listening on :${PORT_HTTP}`));
+}

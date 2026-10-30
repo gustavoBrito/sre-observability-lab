@@ -2,6 +2,9 @@
 // Chain: bff -> pricing -> inventory
 // Demonstrates: manual OTel setup, otelhttp server instrumentation for trace
 // context propagation, and Prometheus exposition via client_golang.
+//
+// Failure injection goes through an injectable RNG seam (nextRandom) so unit
+// tests force both the error and heavy-tail paths deterministically.
 
 package main
 
@@ -72,13 +75,13 @@ func stockHandler(w http.ResponseWriter, r *http.Request) {
 
 	time.Sleep(time.Duration(10+rand.Intn(70)) * time.Millisecond) //nolint:gosec // simulated work
 
-	if rand.Float64() < 0.02 { //nolint:gosec // injected failure
+	if nextRandom() < 0.02 { // injected failure
 		slog.Error("stock read failed", "sku", sku)
 		status(w, http.StatusInternalServerError)
 		return
 	}
 
-	if rand.Float64() < 0.01 { //nolint:gosec // injected tail latency
+	if nextRandom() < 0.01 { // injected tail latency
 		time.Sleep(time.Duration(300+rand.Intn(600)) * time.Millisecond)
 	}
 
@@ -91,6 +94,10 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 	status(w, http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"ok"}`))
 }
+
+// nextRandom is the injectable seam for failure/tail-latency injection.
+// Defaults to rand.Float64(); tests override it for deterministic paths.
+var nextRandom = func() float64 { return rand.Float64() }
 
 func main() {
 	// Traces: OTLP grpc to the collector endpoint from env (deployment config)

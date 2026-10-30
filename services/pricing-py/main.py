@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import random
+import time
 
 import httpx
 import uvicorn
@@ -80,13 +81,12 @@ _http = httpx.AsyncClient(timeout=3.0)
 async def track_metrics(request, call_next):
     if request.url.path in ("/healthz", "/metrics"):
         return await call_next(request)
+    start = time.perf_counter()
     response = await call_next(request)
     REQUESTS.labels(
         request.url.path, request.method, str(response.status_code)
     ).inc()
-    LATENCY.labels(request.url.path).observe(
-        response.headers.get("x-processing-time", "0")
-    )
+    LATENCY.labels(request.url.path).observe(time.perf_counter() - start)
     return response
 
 

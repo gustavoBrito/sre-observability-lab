@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -26,3 +29,81 @@ jobs:
 
       - name: Validate docker compose schema
         run: docker compose config -q
+
+  # Quality gate: >= 90% coverage per language (docs/testing-policy.md)
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps + test tooling
+        run: |
+          pip install -r services/pricing-py/requirements.txt
+          pip install "pytest>=8" "pytest-cov>=6"
+      - name: Run tests with coverage gate
+        working-directory: services/pricing-py
+        run: pytest tests --cov=main --cov-report=term --cov-fail-under=90
+
+  test-node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install deps
+        working-directory: services/bff-node
+        run: npm install --no-audit --no-fund
+      - name: Run tests (jest coverage thresholds in jest.config.js)
+        working-directory: services/bff-node
+        run: npm test
+
+  test-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - name: Vet
+        working-directory: services/inventory-go
+        run: go vet ./...
+      - name: Test with coverage profile
+        working-directory: services/inventory-go
+        run: go test ./... -v -coverprofile=cover.out
+      - name: Coverage gate (business logic, >= 90%)
+        working-directory: services/inventory-go
+        run: python3 ../../scripts/check-go-coverage.py cover.out 90
+
+  # Security / supply chain. enforcing from day one; audits may surface
+  # upstream advisories worth triaging in their own issue.
+  security:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: pip-audit (python deps)
+        run: |
+          pip install pip-audit
+          pip-audit -r services/pricing-py/requirements.txt
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - name: govulncheck (go deps)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          cd services/inventory-go
+          $(go env GOPATH)/bin/govulncheck ./...
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: npm audit (production deps)
+        working-directory: services/bff-node
+        run: npm audit --omit=dev --audit-level=high

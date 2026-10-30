@@ -1,39 +1,63 @@
-# AGENTS.md — guidance for AI coding agents (OpenCode, Copilot, etc.)
+# AGENTS.md — Read before doing ANY changes to this repo
 
-This file is read by AI agents before they act on this repo. It keeps
-contributions from Codex/Claude/OpenCode sessions consistent.
+This file is the prerequisite brief for AI agents (OpenCode, Codex, Claude,
+Copilot) and humans alike. Something not following it = change rejected.
 
 ## Project intent
 
-This is an **observability showcase** mirroring a real-world architecture:
-a Node BFF fronting Python and Go services (BFF + polyglot pattern).
-Quality bar: "could I defend this design in a production incident review?".
+**Observability showcase** mirroring a production-grade architecture:
+Node BFF fronting Python and Go services with OTel end-to-end, SLOs and
+burn-rate alerts. Quality bar: "could I defend this in a live production
+incident review?"
 
-## Conventions
+## Prerequisites (order matters)
 
-- **Config over UI**: dashboards, datasources, scrape/collector configs always
-  live as files. Never "just click it in Grafana".
+1. **Read first (mandatory):**
+   - `docs/architecture.md` — the structure/dependency contract;
+   - `docs/adr/` — architecture decisions ADRs (structural change? write
+     a new ADR into it using `0000-template.md`);
+   - `docs/testing-policy.md` — the "how we measure quality" contract;
+   - `docs/slo.md` + any relevant runbook in `docs/runbooks/`.
+2. **Definition of Done (gates, not suggestions):**
+   - [ ] `yamllint -c .yamllint.yml .` passes
+   - [ ] `ruff check services/pricing-py` passes
+   - [ ] **Test coverage >= 90%** on all touched languages
+         (enforced in CI; see testing-policy for exact commands)
+   - [ ] Security/supply-chain audit job green (npm audit / pip-audit /
+         govulncheck) — new deps must not add known-high vulnerabilities
+   - [ ] Structural change => new ADR
+   - [ ] New alert => runbook link added
+3. **Local runs that must pass before pushing:**
+   - `docker compose config -q`
+   - each language test suite for files you touched
+
+## Hard conventions
+
+- **Config over UI**: dashboards, datasources, scrape/collector configs are
+  files. Never "click it in Grafana".
 - **Low-cardinality labels only** (`endpoint`, `method`, `status_code`).
-  Never IDs, timestamps, query strings or values from random distributions.
-- **Metric names are a cross-language contract**:
-  `bff_http_requests_total`, `pricing_http_requests_total`,
-  `inventory_http_requests_total` (plus matching `*_duration_seconds`
-  histograms) are referenced by `prometheus/rules/slo-alerts.yml` and
-  by status recording rules in the services under `services/` — change all
-  together, never just one side.
-- **Every alert ships with a runbook** in `docs/runbooks/` — an alert without
-  a runbook is a bug. Add a `runbook_url` annotation when creating alerts.
-- **Propagated context, not hand-rolled tracing**: outbound HTTP in any
-  service must go through an instrumented client (otelhttp / httpx
-  instrumentation / node auto-instrumentation). Never set `traceparent`
-  manually.
-- Error and latency injection (`random` 5%/2%/1% branches) exists on purpose;
-  do not "clean it up" — it makes alerts/dashboards show real behavior.
+- **Metric names are a contract**: `bff_http_requests_total`,
+  `pricing_http_requests_total`, `inventory_http_requests_total` (+ matching
+  `*_duration_seconds` histograms) are referenced by
+  `prometheus/rules/slo-alerts.yml` and every service under `services/`.
+  Change all sides together, in the same commit.
+- **Every alert ships with a runbook** in `docs/runbooks/`; add
+  `runbook_url` annotations.
+- **Injected randomness goes through injection seams** (see
+  `services/inventory-go/main.go` `nextRandom`, monkeypatched random in
+  python tests). Do not "clean up" the failure injection — it exists so
+  that alerts and dashboards show real behavior.
+- **Outbound HTTP always via instrumented clients** (otelhttp / httpx
+  instrumentation / node auto-instrumentation). Never hand-roll
+  `traceparent` headers.
+- Python: 4-space, type hinted public functions, ruff clean.
+- Go: run `go vet`; comment on exported symbols.
+- Node: CommonJS, `express`, no new frameworks without an ADR.
 
-## Verify before finishing a task
+## Security
 
-1. `docker compose config -q` passes.
-2. Dashboards reference datasource **UIDs** (`prometheus`, `loki`, `tempo`),
-   never names.
-3. No absolute `localhost` URLs inside container configs (docs/README only).
-4. New Python code passes `ruff check`, YAML passes `yamllint -c .yamllint.yml .`.
+- Never commit secrets/tokens. Config via env at deployment.
+- New dependencies require: pinned version + passing the audit gate.
+- Telemetry backplane (collector, Tempo, Loki, Prometheus) has no published
+  ports; only Grafana view-only + the BFF API are exposed (see
+  `.github/SECURITY.md`).
