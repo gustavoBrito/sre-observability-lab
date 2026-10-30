@@ -31,7 +31,9 @@ burn-rate, tudo reportado em docs as-code — e agents governados por AGENTS.md.
 4. `docs/adr/0002-topology-monorepo-injected-observability.md` — monorepo,
    mas três deploys independentes (compose sobe um serviço por vez) e
    observabilidade como injeção (roadmap: sidecar + Helm por serviço).
-5. `AGENTS.md` — Pré-requisitos para qualquer agente/humano; DoD em gates.
+5. `docs/adr/0003-polyrepo-sidecar-agent-gateway.md` — PROPOSTO: split em
+   5 repos (contracts primeiro) + OTel agent sidecar (agent->gateway).
+6. `AGENTS.md` — Pré-requisitos para qualquer agente/humano; DoD em gates.
 
 ## Dívidas / vigia ativa
 

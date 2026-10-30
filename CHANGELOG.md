@@ -11,6 +11,10 @@ nada entra no histórico sem estar descrita.
   serviço (não é monolito); docker/compose é runtime do lab, não arquitetura;
   observabilidade como injeção (OTLP + sidecar na fase 2, com roadmap para
   charts Helm por serviço).
+- ADR-0003 (proposto, aguardando go): polyrepo split alinhado ao modelo Fury
+  (contract primeiro: `telemetry-contracts` como produto; depois 1 repo por
+  serviço + stack) e sidecar OTel em duas camadas (agent -> gateway),
+  com simulação de pod-localhost em compose via `network_mode`.
 
 ## [0.2.0] — 2026-10-30
 
