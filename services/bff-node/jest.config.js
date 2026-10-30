@@ -1,7 +1,7 @@
 module.exports = {
   testEnvironment: "node",
   setupFiles: ["<rootDir>/tests/setup-env.js"],
-  collectCoverageFrom: ["server.js"],
+  collectCoverageFrom: ["src/**/*.js", "!src/index.js"],
   testTimeout: 10000,
   coverageThreshold: {
     global: {

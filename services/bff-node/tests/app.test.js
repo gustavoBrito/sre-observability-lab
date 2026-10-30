@@ -15,7 +15,7 @@ function mockPricing(status, body) {
 }
 
 beforeAll(() => {
-  app = require("../server").app;
+  app = require("../src/app").app;
 });
 
 describe("BFF /api/orders", () => {

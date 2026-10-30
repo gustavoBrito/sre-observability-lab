@@ -44,7 +44,7 @@ jobs:
           pip install "pytest>=8" "pytest-cov>=6"
       - name: Run tests with coverage gate
         working-directory: services/pricing-py
-        run: pytest tests --cov=main --cov-report=term --cov-fail-under=90
+        run: pytest tests --cov=pricing --cov-report=term --cov-fail-under=90
 
   test-node:
     runs-on: ubuntu-latest
@@ -72,7 +72,7 @@ jobs:
         run: go vet ./...
       - name: Test with coverage profile
         working-directory: services/inventory-go
-        run: go test ./... -v -coverprofile=cover.out
+        run: go test ./... -coverpkg=./... -coverprofile=cover.out
       - name: Coverage gate (business logic, >= 90%)
         working-directory: services/inventory-go
         run: python3 ../../scripts/check-go-coverage.py cover.out 90

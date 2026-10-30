@@ -33,6 +33,11 @@ incident review?"
 
 ## Hard conventions
 
+- **Layered services, dependency direction enforced**:
+  `routes/handlers (interfaces) -> service (use cases) -> repositories
+  (gateways) + models (entities)`; `observability/` is a LEAF package.
+  Business logic never imports HTTP/handlers; nothing imports observability
+  except edges. Structural change => new ADR.
 - **Config over UI**: dashboards, datasources, scrape/collector configs are
   files. Never "click it in Grafana".
 - **Low-cardinality labels only** (`endpoint`, `method`, `status_code`).
@@ -44,9 +49,10 @@ incident review?"
 - **Every alert ships with a runbook** in `docs/runbooks/`; add
   `runbook_url` annotations.
 - **Injected randomness goes through injection seams** (see
-  `services/inventory-go/main.go` `nextRandom`, monkeypatched random in
-  python tests). Do not "clean up" the failure injection — it exists so
-  that alerts and dashboards show real behavior.
+  `inventory-go/internal/repository` `rng01`, `pricing` module `rng01`/
+  `tail01`, node `ordersService` seams; monkeypatched in tests). Do not
+  "clean up" the failure injection — it exists so that alerts and dashboards
+  show real behavior.
 - **Outbound HTTP always via instrumented clients** (otelhttp / httpx
   instrumentation / node auto-instrumentation). Never hand-roll
   `traceparent` headers.

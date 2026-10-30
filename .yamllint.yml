@@ -1,4 +1,4 @@
-extends: relaxation-mode-001
+extends: relaxed
 
 rules:
   line-length: disable

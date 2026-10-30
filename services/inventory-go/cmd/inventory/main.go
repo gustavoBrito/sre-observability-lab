@@ -1,7 +1,5 @@
-// Inventory service (Go) - deepest hop of the distributed trace.
-// Chain: bff -> pricing -> inventory
-// Bootstrap only (wiring): OTel exporter/provider setup, HTTP servers, env.
-// Business logic lives in handlers.go (unit-tested; see handlers_test.go).
+// Bootstrap only (wiring): OTel exporter/provider, HTTP servers, env.
+// Business lives in internal/service, HTTP edges in internal/handlers.
 
 package main
 
@@ -21,10 +19,18 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"inventory/internal/handlers"
 )
 
+func envOr(k, fallback string) string {
+	if v := os.Getenv(k); v != "" {
+		return strings.TrimSpace(v)
+	}
+	return fallback
+}
+
 func main() {
-	// Traces: OTLP grpc to the collector endpoint from env (deployment config)
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	defer stop()
 
@@ -53,11 +59,10 @@ func main() {
 
 	addr := ":" + envOr("PORT_HTTP", "8003")
 	mux := http.NewServeMux()
-	mux.Handle("/stock", otelhttp.NewHandler(http.HandlerFunc(stockHandler), "stock"))
-	mux.Handle("/healthz", otelhttp.NewHandler(http.HandlerFunc(healthHandler), "healthz"))
+	mux.Handle("/stock", otelhttp.NewHandler(http.HandlerFunc(handlers.Stock), "stock"))
+	mux.Handle("/healthz", otelhttp.NewHandler(http.HandlerFunc(handlers.Health), "healthz"))
 
 	port := envOr("PORT_METRICS", "9003")
-
 	go func() {
 		if err := http.ListenAndServe(":"+port, promhttp.Handler()); err != nil {
 			slog.Error("metrics server failed", "error", err)
@@ -73,11 +78,4 @@ func main() {
 	}
 
 	<-ctx.Done()
-}
-
-func envOr(k, fallback string) string {
-	if v := os.Getenv(k); v != "" {
-		return strings.TrimSpace(v)
-	}
-	return fallback
 }
