@@ -5,8 +5,10 @@ rules:
   comments: disable
   document-start: disable
   truthy:
-    # GitHub Actions uses "on:" as a key
-    ignore: true
+    # GitHub Actions uses "on:" as a key - not a yaml boolean check
+    ignore:
+      - "on"
+      - ".github/workflows/*.yml"
   indentation:
     spaces: consistent
     indent-sequences: consistent

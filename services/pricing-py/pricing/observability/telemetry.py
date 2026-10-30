@@ -26,7 +26,7 @@ def configure() -> None:
 
     # Traces
     provider = TracerProvider(resource=resource)
-    provider.add_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     trace.set_tracer_provider(provider)
 
     # Logs shipped as OTLP (Loki receives them without host agents)
