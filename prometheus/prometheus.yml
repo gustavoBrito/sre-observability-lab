@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  # Direct scrape of app-level metrics on dedicated ports.
+  # Rationale (see README): stable metric schema for SLO math, independent
+  # from OTel instrument_library naming pivots.
+  - job_name: bff-node
+    static_configs:
+      - targets: ["bff:9001"]
+
+  - job_name: pricing-py
+    static_configs:
+      - targets: ["pricing:9002"]
+
+  - job_name: inventory-go
+    static_configs:
+      - targets: ["inventory:9003"]

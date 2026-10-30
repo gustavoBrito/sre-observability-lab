@@ -1,0 +1,105 @@
+name: sre-observability-lab
+
+x-otel-env: &otel-env
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+  OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+  OTEL_TRACES_SAMPLER: parentbased_traceidratio
+  OTEL_TRACES_SAMPLER_ARG: "0.5"
+
+services:
+  bff:
+    build: ./services/bff-node
+    ports:
+      - "8000:8000"
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: bff-node
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      PRICING_URL: http://pricing:8002
+      PORT_HTTP: "8000"
+      PORT_METRICS: "9001"
+    depends_on:
+      - pricing
+      - otel-collector
+
+  pricing:
+    build: ./services/pricing-py
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: pricing-py
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: otlp
+      INVENTORY_URL: http://inventory:8003
+      PORT_METRICS: "9002"
+
+  inventory:
+    build: ./services/inventory-go
+    environment:
+      OTEL_SERVICE_NAME: inventory-go
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      PORT_HTTP: "8003"
+      PORT_METRICS: "9003"
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.122.0
+    volumes:
+      - ./otel/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+    ports:
+      - "9090:9090"
+
+  tempo:
+    image: grafana/tempo:2.7.0
+    command:
+      - -config.file=/etc/tempo/tempo.yml
+    volumes:
+      - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+
+  loki:
+    image: grafana/loki:3.4.0
+    command:
+      - -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_BASIC_ENABLED: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+  loadgen:
+    image: python:3.12-slim
+    command:
+      - python
+      - /loadgen/loadgen.py
+    volumes:
+      - ./loadgen:/loadgen:ro
+    depends_on:
+      - bff
+
+volumes:
+  tempo-data:
+  loki-data:

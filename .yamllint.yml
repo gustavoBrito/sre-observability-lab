@@ -1,0 +1,15 @@
+extends: relaxation-mode-001
+
+rules:
+  line-length: disable
+  comments: disable
+  document-start: disable
+  truthy:
+    # GitHub Actions uses "on:" as a key
+    ignore: true
+  indentation:
+    spaces: consistent
+    indent-sequences: consistent
+
+ignore: |
+  grafana/dashboards/

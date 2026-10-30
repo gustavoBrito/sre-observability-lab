@@ -1,0 +1,105 @@
+# SLO alerts for the user-facing edge (BFF).
+#
+# Method: Google SRE Workbook multi-window burn-rate alerting.
+# SLOs (docs/slo.md):
+#   availability: 99.9% of requests succeed  -> budget = 0.1% error ratio
+#   latency:      99%  < 500ms              -> budget = 1% slow-request ratio
+#
+# Fast path  (14.4x burn, 5m+1h windows): pages.
+# Slow path  (6x burn, 30m+6h windows):   ticket, next business day.
+
+groups:
+  - name: slo-bff-availability
+    interval: 30s
+    rules:
+      - record: slo:bff:availability_error_rate:rate5m
+        expr: |
+          sum(rate(bff_http_requests_total{status_code=~"5.."}[5m]))
+            /
+          sum(rate(bff_http_requests_total[5m]))
+
+      - record: slo:bff:availability_error_rate:rate1h
+        expr: |
+          sum(rate(bff_http_requests_total{status_code=~"5.."}[1h]))
+            /
+          sum(rate(bff_http_requests_total[1h]))
+
+      - record: slo:bff:availability_error_rate:rate30m
+        expr: |
+          sum(rate(bff_http_requests_total{status_code=~"5.."}[30m]))
+            /
+          sum(rate(bff_http_requests_total[30m]))
+
+      - record: slo:bff:availability_error_rate:rate6h
+        expr: |
+          sum(rate(bff_http_requests_total{status_code=~"5.."}[6h]))
+            /
+          sum(rate(bff_http_requests_total[6h]))
+
+      - alert: SLOBFFAvailabilityBurnRateFast
+        expr: |
+          (
+            slo:bff:availability_error_rate:rate5m  > 14.4 * 0.001
+            and
+            slo:bff:availability_error_rate:rate1h  > 14.4 * 0.001
+          )
+        labels:
+          severity: page
+          team: sre
+        annotations:
+          summary: "BFF availability SLO is burning fast (14.4x budget)"
+          description: >
+            Error rate over 5m AND 1h exceeds 14.4x the 0.1% budget.
+            At this burn rate the 30d error budget is exhausted in ~2 days.
+            Expected page response: check runbook within 5 minutes.
+          runbook_url: "https://github.com/YOUR_USER/sre-observability-lab/blob/main/docs/runbooks/high-error-rate-burn.md"
+
+      - alert: SLOBFFAvailabilityBurnRateSlow
+        expr: |
+          (
+            slo:bff:availability_error_rate:rate30m > 6 * 0.001
+            and
+            slo:bff:availability_error_rate:rate6h  > 6 * 0.001
+          )
+        labels:
+          severity: ticket
+          team: sre
+        annotations:
+          summary: "BFF availability SLO burning slowly (6x budget)"
+          description: >
+            Sustained elevated error rate over 6h; 30d budget exhausts
+            in ~5 days if unchanged. Investigate during business hours.
+          runbook_url: "https://github.com/YOUR_USER/sre-observability-lab/blob/main/docs/runbooks/high-error-rate-burn.md"
+
+  - name: slo-bff-latency
+    interval: 30s
+    rules:
+      - record: slo:bff:latency_error_rate:rate5m
+        expr: |
+          sum(rate(bff_http_request_duration_seconds_count[5m]))
+            -
+          sum(rate(bff_http_request_duration_seconds_bucket{le="0.5"}[5m]))
+        labels:
+          window: "5m"
+
+      - alert: SLOBFFLatencyBurnRateFast
+        expr: |
+          (
+            (rate(bff_http_request_duration_seconds_count[5m])
+              - rate(bff_http_request_duration_seconds_bucket{le="0.5"}[5m]))
+              / clamp_min(rate(bff_http_request_duration_seconds_count[5m]), 0.001)
+              > 14.4 * 0.01
+          )
+          and
+          (
+            (rate(bff_http_request_duration_seconds_count[1h])
+              - rate(bff_http_request_duration_seconds_bucket{le="0.5"}[1h]))
+              / clamp_min(rate(bff_http_request_duration_seconds_count[1h]), 0.001)
+              > 14.4 * 0.01
+          )
+        labels:
+          severity: page
+          team: sre
+        annotations:
+          summary: "BFF latency SLO burning fast: >1% of requests above 500ms"
+          runbook_url: "https://github.com/YOUR_USER/sre-observability-lab/blob/main/docs/runbooks/latency-burn.md"
