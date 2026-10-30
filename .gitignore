@@ -1,5 +1,6 @@
 # Data / runtime
 node_modules/
+coverage/
 tempo-data/
 loki-data/
 .pytest_cache/
