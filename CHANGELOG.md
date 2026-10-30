@@ -4,6 +4,14 @@ Formato de mercado: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.3.0/) 
 [SemVer](https://semver.org/lang/pt-BR/). Toda mudança relevante entra aqui;
 nada entra no histórico sem estar descrita.
 
+## [Unreleased]
+
+### Added
+- ADR-0002: topology decision - monorepo com três deploys independentes por
+  serviço (não é monolito); docker/compose é runtime do lab, não arquitetura;
+  observabilidade como injeção (OTLP + sidecar na fase 2, com roadmap para
+  charts Helm por serviço).
+
 ## [0.2.0] — 2026-10-30
 
 ### Added

@@ -28,7 +28,10 @@ burn-rate, tudo reportado em docs as-code — e agents governados por AGENTS.md.
 2. `docs/architecture.md` — dependência dirigida `bff -> pricing -> inventory`,
    edges thin, gateways com timeout, sem cross-calls.
 3. `docs/testing-policy.md` — cobertura como gate; inj de RNG como seam.
-4. `AGENTS.md` — Pré-requisitos para qualquer agente/humano; DoD em gates.
+4. `docs/adr/0002-topology-monorepo-injected-observability.md` — monorepo,
+   mas três deploys independentes (compose sobe um serviço por vez) e
+   observabilidade como injeção (roadmap: sidecar + Helm por serviço).
+5. `AGENTS.md` — Pré-requisitos para qualquer agente/humano; DoD em gates.
 
 ## Dívidas / vigia ativa
 
@@ -39,6 +42,8 @@ burn-rate, tudo reportado em docs as-code — e agents governados por AGENTS.md.
       CI via `docker compose config -q`); primeira execução pode exigir
       ajustes de versão de imagens (otel-collector 0.122, tempo 2.7, loki 3.4).
 - [ ] ROADMAP: Alertmanager, blackbox, Helm, client React no BFF.
+- [ ] ROADMAP (ADR-0002 fase 2): Helm charts por serviço + OTel agent
+      sidecar; package de contract-test das métricas se/qualquer split.
 
 ## Próximos passos (ordem sugerida)
 
